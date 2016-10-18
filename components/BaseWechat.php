@@ -6,9 +6,11 @@ use DOMElement;
 use DOMText;
 use Yii;
 use yii\base\Event;
+use yii\base\Arrayable;
 use yii\base\Component;
 use yii\web\HttpException;
 use yii\base\InvalidParamException;
+use yii\helpers\StringHelper;
 
 /**
  * 微信SDK操作基类
@@ -71,7 +73,7 @@ abstract class BaseWechat extends Component
     {
         $time = time(); // 为了更精确控制.取当前时间计算
         if ($this->_accessToken === null || $this->_accessToken['expire'] < $time || $force) {
-            $result = $this->_accessToken === null && !$force ? $this->getCache('access_token', false) : false;
+            $result = $this->_accessToken === null && !$force ? $this->getCache('access_token') : false;
             if ($result === false) {
                 if (!($result = $this->requestAccessToken())) {
                     throw new HttpException(500, 'Fail to get access_token from wechat server.');
@@ -127,7 +129,7 @@ abstract class BaseWechat extends Component
     {
         $time = time(); // 为了更精确控制.取当前时间计算
         if ($this->_jsApiTicket === null || $this->_jsApiTicket['expire'] < $time || $force) {
-            $result = $this->_jsApiTicket === null && !$force ? $this->getCache('js_api_ticket', false) : false;
+            $result = $this->_jsApiTicket === null && !$force ? $this->getCache('js_api_ticket') : false;
             if ($result === false) {
                 if (!($result = $this->requestJsApiTicket())) {
                     throw new HttpException(500, 'Fail to get jsapi_ticket from wechat server.');
@@ -240,6 +242,7 @@ abstract class BaseWechat extends Component
     public $itemTag = 'item';
 
     /**
+     * @param DOMElement $element
      * @see yii\web\XmlResponseFormatter::buildXml()
      */
     protected function buildXml($element, $data)
