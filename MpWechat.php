@@ -4,7 +4,6 @@ namespace callmez\wechat\sdk;
 use Yii;
 use yii\base\InvalidConfigException;
 use callmez\wechat\sdk\mp\Card;
-use callmez\wechat\sdk\mp\Shop;
 use callmez\wechat\sdk\mp\ShakeAround;
 use callmez\wechat\sdk\mp\DataCube;
 use callmez\wechat\sdk\mp\CustomService;
