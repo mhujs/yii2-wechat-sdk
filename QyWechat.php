@@ -1,7 +1,9 @@
 <?php
 namespace callmez\wechat\sdk;
 
+use Yii;
 use callmez\wechat\sdk\components\BaseWechat;
+use callmez\wechat\sdk\components\MessageCrypt;
 
 /**
  * 微信企业号操作SDK
@@ -41,6 +43,55 @@ class QyWechat extends BaseWechat
         return parent::httpBuildQuery($url, $options);
     }
 
+    /**
+     * @inheritdoc
+     * 获取缓存键值
+     * @param $name
+     * @return string
+     */
+    protected function getCacheKey($name)
+    {
+        return $this->cachePrefix . '_' . $this->appId . '_' . $name;
+    }
+
+    /**
+     * @inheritdoc
+     * 创建消息加密类
+     * @return object
+     */
+    protected function createMessageCrypt()
+    {
+        return Yii::createObject(MessageCrypt::className(), [$this->token, $this->encodingAesKey, $this->appId]);
+    }
+
+
+    /**
+     * @inheritdoc
+     * @param bool $force 是否强制获取access_token, 该设置会在access_token使用错误时, 是否再获取一次access_token并再重新提交请求
+     */
+    public function parseHttpRequest(callable $callable, $url, $postOptions = null, $force = true)
+    {
+        $result = call_user_func_array($callable, [$url, $postOptions]);
+        if (isset($result['errcode']) && $result['errcode']) {
+            $this->lastError = $result;
+            Yii::warning([
+                'url' => $url,
+                'result' => $result,
+                'postOptions' => $postOptions
+            ], __METHOD__);
+            switch ($result ['errcode']) {
+                case 40001: //access_token 失效,强制更新access_token, 并更新地址重新执行请求
+                    if ($force) {
+                        $url = preg_replace_callback("/access_token=([^&]*)/i", function(){
+                            return 'access_token=' . $this->getAccessToken(true);
+                        }, $url);
+                        $result = $this->parseHttpRequest($callable, $url, $postOptions, false); // 仅重新获取一次,否则容易死循环
+                    }
+                    break;
+            }
+        }
+        return $result;
+    }
     /* =================== 建立连接 =================== */
 
     /**
@@ -745,7 +796,7 @@ class QyWechat extends BaseWechat
     /**
      * 企业获取code:第
      * 通过此函数生成授权url
-     * @param $redirectUrl 授权后重定向的回调链接地址，请使用urlencode对链接进行处理
+     * @param string $redirectUrl 授权后重定向的回调链接地址，请使用urlencode对链接进行处理
      * @param string $state 重定向后会带上state参数，开发者可以填写a-zA-Z0-9的参数值
      * @param string $scope 应用授权作用域，snsapi_base （不弹出授权页面，直接跳转，只能获取用户openid），
      * snsapi_userinfo （弹出授权页面，可通过openid拿到昵称、性别、所在地。并且，即使在未关注的情况下，只要用户授权，也能获取其信息）
