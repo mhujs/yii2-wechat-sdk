@@ -201,7 +201,7 @@ class Card extends WechatComponent
         $time = time(); // 为了更精确控制.取当前时间计算
         $type = 'wx_card';
         if ($this->_jsApiTicket === null || $this->_jsApiTicket['expire'] < $time || $force) {
-            $result = $this->_jsApiTicket === null && !$force ? $this->wechat->getCache('card_js_api_ticket', false) : false;
+            $result = $this->_jsApiTicket === null && !$force ? $this->wechat->getCache('card_js_api_ticket') : false;
             if ($result === false) {
                 if (!($result = $this->wechat->requestJsApiTicket($type))) {
                     throw new HttpException(500, 'Fail to get card jsapi_ticket from wechat server.');
